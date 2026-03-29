@@ -115,7 +115,7 @@ class StepResult(BaseModel):
 
 class ResetRequest(BaseModel):
     """Request body for reset()."""
-    task_id: str
+    task_id: str = "billing_dispute_easy"
     seed: Optional[int] = None
 
 

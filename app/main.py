@@ -68,8 +68,10 @@ async def health():
 
 # ── OpenEnv Core API ──────────────────────────────────────────────────────────
 @app.post("/reset", tags=["openenv"])
-async def reset(request: ResetRequest):
+async def reset(request: Optional[ResetRequest] = None):
     """Reset the environment and start a new episode."""
+    if request is None:
+        request = ResetRequest()
     try:
         result = _env.reset(request)
         # Return plain dict to avoid serialization issues
