@@ -1,0 +1,66 @@
+name: OpenEnv CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pre-submission validator
+        run: python validator.py
+
+      - name: Run test suite
+        run: pytest tests/ -v --tb=short
+
+      - name: Run baseline inference
+        run: python baseline.py
+
+      - name: Check baseline results exist
+        run: |
+          python -c "
+          import json
+          with open('baseline_results.json') as f:
+              r = json.load(f)
+          assert r['mean_score'] > 0.5, f'Mean score too low: {r[\"mean_score\"]}'
+          for task_id, score in r['scores'].items():
+              assert 0.0 < score <= 1.0, f'{task_id} score out of range: {score}'
+          print('Baseline results valid:', r)
+          "
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t openenv-support:ci .
+
+      - name: Smoke test container
+        run: |
+          docker run -d --name test-env -p 7860:7860 openenv-support:ci
+          sleep 5
+          curl -f http://localhost:7860/health || (docker logs test-env && exit 1)
+          curl -f -X POST http://localhost:7860/reset \
+               -H "Content-Type: application/json" \
+               -d '{"task_id": "billing_dispute_easy", "seed": 42}' \
+               | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['task_id']=='billing_dispute_easy'"
+          echo "Smoke test passed"
+          docker stop test-env

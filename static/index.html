@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenEnv · Customer Support Resolution</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #252836;
+    --border: #2e3147;
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --easy: #22c55e;
+    --medium: #eab308;
+    --hard: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  header h1 { font-size: 18px; font-weight: 700; }
+  header .badge {
+    background: var(--accent); color: white;
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+  }
+  header .sub { color: var(--muted); font-size: 13px; margin-left: auto; }
+
+  .layout { display: grid; grid-template-columns: 300px 1fr; height: calc(100vh - 57px); }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    overflow-y: auto;
+  }
+  .sidebar h2 { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
+
+  .task-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .task-card:hover { border-color: var(--accent2); background: var(--surface2); }
+  .task-card.active { border-color: var(--accent); background: var(--surface2); }
+  .task-card .t-name { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .task-card .t-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .task-card .t-meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .pill {
+    font-size: 10px; font-weight: 600; padding: 2px 8px;
+    border-radius: 20px; border: 1px solid currentColor;
+  }
+  .pill.easy   { color: var(--easy); }
+  .pill.medium { color: var(--medium); }
+  .pill.hard   { color: var(--hard); }
+  .pill.steps  { color: var(--muted); border-color: var(--border); }
+
+  .seed-row { display: flex; align-items: center; gap: 8px; margin: 16px 0 8px; }
+  .seed-row label { font-size: 12px; color: var(--muted); }
+  .seed-row input {
+    width: 80px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 4px 8px; border-radius: 6px; font-size: 13px;
+  }
+
+  .btn {
+    width: 100%; padding: 10px; border-radius: 8px; border: none;
+    font-weight: 600; font-size: 13px; cursor: pointer; transition: opacity .15s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); margin-top: 8px; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  .score-display {
+    margin-top: 16px; padding: 14px;
+    background: var(--surface2); border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .score-display h3 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+  .score-val { font-size: 28px; font-weight: 800; }
+  .score-val.pass { color: var(--green); }
+  .score-val.fail { color: var(--red); }
+  .score-feedback { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+  .breakdown-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 3px 0; }
+  .breakdown-item .bk-name { color: var(--muted); }
+  .breakdown-item .bk-val { font-weight: 600; font-family: monospace; }
+  .breakdown-item .bk-val.pos { color: var(--green); }
+  .breakdown-item .bk-val.neg { color: var(--red); }
+
+  /* Main */
+  .main { display: flex; flex-direction: column; overflow: hidden; }
+
+  .obs-panel {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    flex-shrink: 0;
+  }
+  .obs-panel h2 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+  .obs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+  .obs-field { background: var(--surface2); border-radius: 8px; padding: 8px 12px; }
+  .obs-field .of-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .obs-field .of-val { font-size: 13px; font-weight: 600; margin-top: 2px; }
+  .status-bar {
+    display: flex; gap: 12px; align-items: center;
+    font-size: 12px; color: var(--muted); margin-top: 10px;
+  }
+  .status-bar .sep { color: var(--border); }
+
+  .conversation {
+    flex: 1; overflow-y: auto;
+    padding: 16px 20px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  .msg {
+    border-radius: 10px;
+    padding: 10px 14px;
+    max-width: 85%;
+    font-size: 13px; line-height: 1.55;
+  }
+  .msg.customer { background: var(--surface2); border: 1px solid var(--border); align-self: flex-start; }
+  .msg.agent    { background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); align-self: flex-end; }
+  .msg.system   { background: rgba(234,179,8,.07); border: 1px solid rgba(234,179,8,.2); align-self: center; font-size: 12px; color: var(--muted); max-width: 95%; }
+  .msg .msg-role { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; opacity: .7; }
+
+  .reward-tag {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px; margin-left: 8px; vertical-align: middle;
+  }
+  .reward-tag.pos { background: rgba(34,197,94,.15); color: var(--green); }
+  .reward-tag.neg { background: rgba(239,68,68,.15); color: var(--red); }
+  .reward-tag.zero { background: var(--surface2); color: var(--muted); }
+
+  .action-panel {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 14px 20px;
+    flex-shrink: 0;
+  }
+  .action-panel h2 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+  .action-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .action-btn {
+    padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text);
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: border-color .12s, background .12s;
+  }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .action-btn.selected { border-color: var(--accent); background: rgba(99,102,241,.15); color: var(--accent2); }
+
+  .payload-row {
+    display: flex; gap: 8px; margin-top: 10px; align-items: flex-end; flex-wrap: wrap;
+  }
+  .payload-row .pf {
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .payload-row label { font-size: 11px; color: var(--muted); }
+  .payload-row input, .payload-row textarea {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 10px; border-radius: 7px; font-size: 13px;
+    min-width: 200px;
+  }
+  .payload-row textarea { min-width: 320px; min-height: 56px; resize: vertical; }
+
+  .step-btn {
+    padding: 8px 20px; background: var(--accent); color: white;
+    border: none; border-radius: 8px; font-weight: 700; font-size: 13px;
+    cursor: pointer; white-space: nowrap;
+  }
+  .step-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--muted); gap: 8px;
+  }
+  .empty-state .icon { font-size: 48px; }
+  .empty-state p { font-size: 14px; }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; margin-left: 6px; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:22px">🎧</span>
+  <h1>Customer Support Resolution</h1>
+  <span class="badge">OpenEnv</span>
+  <span class="sub">Meta × Hugging Face · RL Environment</span>
+</header>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>Tasks</h2>
+    <div id="taskList"></div>
+
+    <div class="seed-row">
+      <label>Seed</label>
+      <input type="number" id="seedInput" value="42" min="0" max="9999">
+    </div>
+    <button class="btn btn-primary" id="resetBtn" onclick="resetEpisode()">▶ Start Episode</button>
+    <button class="btn btn-secondary" id="gradeBtn" onclick="gradeEpisode()" disabled>📊 Grade Episode</button>
+    <button class="btn btn-secondary" onclick="runBaseline()" style="margin-top:8px">🤖 Run Baseline (all tasks)</button>
+
+    <div class="score-display" id="scoreDisplay" style="display:none"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="obs-panel" id="obsPanel" style="display:none">
+      <h2>Current Observation</h2>
+      <div class="obs-grid" id="obsGrid"></div>
+      <div class="status-bar" id="statusBar"></div>
+    </div>
+
+    <div class="conversation" id="conversation">
+      <div class="empty-state">
+        <div class="icon">🎫</div>
+        <p>Select a task and click <strong>Start Episode</strong> to begin.</p>
+      </div>
+    </div>
+
+    <div class="action-panel" id="actionPanel" style="display:none">
+      <h2>Take an Action</h2>
+      <div class="action-row" id="actionRow"></div>
+      <div class="payload-row" id="payloadRow"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+const BASE = window.location.origin;
+const TASK_DEFS = [];
+let activeTaskId = null;
+let episodeActive = false;
+let selectedAction = null;
+let totalReward = 0;
+
+// ── Action payload templates ──────────────────────────────────────────────────
+const PAYLOAD_TEMPLATES = {
+  ask_clarification:  [{ key: 'question', label: 'Question', type: 'textarea', placeholder: 'e.g. Can you describe the error?' }],
+  lookup_account:     [{ key: 'account_id', label: 'Account ID', type: 'text', placeholder: 'e.g. ACC-7842' }],
+  apply_fix:          [{ key: 'fix_type', label: 'Fix Type', type: 'text', placeholder: 'e.g. reset_auth_config' },
+                       { key: 'component', label: 'Component', type: 'text', placeholder: 'e.g. auth' }],
+  escalate:           [{ key: 'tier', label: 'Tier', type: 'text', placeholder: '2' },
+                       { key: 'reason', label: 'Reason', type: 'text', placeholder: 'e.g. Infrastructure outage' }],
+  send_response:      [{ key: 'message', label: 'Message to Customer', type: 'textarea', placeholder: 'Write your response...' }],
+  close_ticket:       [{ key: 'resolution', label: 'Resolution Notes', type: 'textarea', placeholder: 'Describe what was done to resolve the issue...' }],
+  issue_refund:       [{ key: 'amount', label: 'Amount ($)', type: 'text', placeholder: '49.99' },
+                       { key: 'reason', label: 'Reason', type: 'text', placeholder: 'duplicate_charge' }],
+  reset_credentials:  [{ key: 'method', label: 'Method', type: 'text', placeholder: 'email' },
+                       { key: 'notify_customer', label: 'Notify? (true/false)', type: 'text', placeholder: 'true' }],
+  check_system_status:[{ key: 'service', label: 'Service', type: 'text', placeholder: 'api_gateway' },
+                       { key: 'region', label: 'Region', type: 'text', placeholder: 'all' }],
+};
+
+const ACTION_LABELS = {
+  ask_clarification: '❓ Ask Clarification',
+  lookup_account:    '🔍 Lookup Account',
+  check_system_status: '📡 Check Status',
+  apply_fix:         '🔧 Apply Fix',
+  issue_refund:      '💰 Issue Refund',
+  reset_credentials: '🔐 Reset Credentials',
+  escalate:          '⬆ Escalate',
+  send_response:     '💬 Send Response',
+  close_ticket:      '✅ Close Ticket',
+};
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const r = await fetch(`${BASE}/tasks`);
+    const data = await r.json();
+    const list = document.getElementById('taskList');
+    data.tasks.forEach((t, i) => {
+      TASK_DEFS.push(t);
+      const card = document.createElement('div');
+      card.className = 'task-card' + (i === 0 ? ' active' : '');
+      card.id = `task-${t.id}`;
+      card.onclick = () => selectTask(t.id);
+      card.innerHTML = `
+        <div class="t-name">${t.name}</div>
+        <div class="t-desc">${t.description.substring(0, 90)}...</div>
+        <div class="t-meta">
+          <span class="pill ${t.difficulty}">${t.difficulty}</span>
+          <span class="pill steps">≤${t.max_steps} steps</span>
+          <span class="pill steps">pass ≥${t.reward_threshold}</span>
+        </div>`;
+      list.appendChild(card);
+    });
+    if (TASK_DEFS.length > 0) selectTask(TASK_DEFS[0].id);
+  } catch(e) {
+    showError('Could not reach API: ' + e.message);
+  }
+}
+
+function selectTask(id) {
+  activeTaskId = id;
+  document.querySelectorAll('.task-card').forEach(c => c.classList.remove('active'));
+  document.getElementById(`task-${id}`)?.classList.add('active');
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+async function resetEpisode() {
+  if (!activeTaskId) return;
+  const seed = parseInt(document.getElementById('seedInput').value) || 42;
+  const btn = document.getElementById('resetBtn');
+  btn.disabled = true;
+  btn.innerHTML = 'Starting… <span class="spinner"></span>';
+
+  try {
+    const r = await fetch(`${BASE}/reset`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ task_id: activeTaskId, seed })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || 'Reset failed');
+
+    episodeActive = true;
+    totalReward = 0;
+    document.getElementById('gradeBtn').disabled = false;
+    document.getElementById('scoreDisplay').style.display = 'none';
+
+    renderObs(data.observation);
+    renderConversation(data.observation.conversation_history, null);
+    renderActionPanel();
+  } catch(e) {
+    showError(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '▶ Start Episode';
+  }
+}
+
+// ── Step ──────────────────────────────────────────────────────────────────────
+async function takeStep() {
+  if (!episodeActive || !selectedAction) return;
+
+  const payload = {};
+  const templates = PAYLOAD_TEMPLATES[selectedAction] || [];
+  templates.forEach(t => {
+    const el = document.getElementById(`pf-${t.key}`);
+    if (el && el.value.trim()) {
+      let v = el.value.trim();
+      if (v === 'true') v = true;
+      else if (v === 'false') v = false;
+      else if (!isNaN(v) && v !== '') v = parseFloat(v);
+      payload[t.key] = v;
+    }
+  });
+
+  const stepBtn = document.getElementById('stepSubmitBtn');
+  stepBtn.disabled = true;
+  stepBtn.textContent = 'Sending…';
+
+  try {
+    const r = await fetch(`${BASE}/step`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ action_type: selectedAction, payload })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || 'Step failed');
+
+    totalReward += data.reward;
+    renderObs(data.observation);
+    renderConversation(data.observation.conversation_history, data.reward);
+
+    if (data.done) {
+      episodeActive = false;
+      document.getElementById('actionPanel').style.display = 'none';
+      await gradeEpisode();
+    }
+  } catch(e) {
+    showError(e.message);
+  } finally {
+    if (stepBtn) { stepBtn.disabled = false; stepBtn.textContent = '⚡ Step'; }
+  }
+}
+
+// ── Grade ─────────────────────────────────────────────────────────────────────
+async function gradeEpisode() {
+  try {
+    const stateR = await fetch(`${BASE}/state`);
+    const state = await stateR.json();
+
+    const r = await fetch(`${BASE}/grader`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ task_id: activeTaskId, episode_log: state.episode_log })
+    });
+    const data = await r.json();
+    renderScore(data);
+  } catch(e) {
+    showError(e.message);
+  }
+}
+
+// ── Baseline ─────────────────────────────────────────────────────────────────
+async function runBaseline() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = 'Running… <span class="spinner"></span>';
+  try {
+    const r = await fetch(`${BASE}/baseline`);
+    const data = await r.json();
+    const task = TASK_DEFS.find(t => t.id === activeTaskId);
+    const threshold = task?.reward_threshold || 0.5;
+
+    document.getElementById('scoreDisplay').style.display = 'block';
+    document.getElementById('scoreDisplay').innerHTML = `
+      <h3>Baseline Results (all tasks)</h3>
+      ${Object.entries(data.scores).map(([id, s]) => {
+        const td = TASK_DEFS.find(t => t.id === id);
+        const pass = s >= (td?.reward_threshold || 0.5);
+        return `<div class="breakdown-item">
+          <span class="bk-name">${id.replace(/_/g,' ')}</span>
+          <span class="bk-val ${pass?'pos':'neg'}">${s.toFixed(4)} ${pass?'✓':'✗'}</span>
+        </div>`;
+      }).join('')}
+      <div class="breakdown-item" style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px">
+        <span class="bk-name" style="font-weight:700">Mean Score</span>
+        <span class="bk-val pos">${data.mean_score.toFixed(4)}</span>
+      </div>`;
+  } catch(e) {
+    showError(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🤖 Run Baseline (all tasks)';
+  }
+}
+
+// ── Render helpers ─────────────────────────────────────────────────────────────
+function renderObs(obs) {
+  document.getElementById('obsPanel').style.display = 'block';
+  const grid = document.getElementById('obsGrid');
+  const fields = [
+    ['Ticket', obs.ticket_id],
+    ['Category', obs.issue_category],
+    ['Tier', obs.customer_tier],
+    ['Priority', obs.priority],
+  ];
+  grid.innerHTML = fields.map(([l,v]) =>
+    `<div class="obs-field"><div class="of-label">${l}</div><div class="of-val">${v}</div></div>`
+  ).join('');
+
+  const slaColor = obs.sla_breached ? 'var(--red)' : 'var(--muted)';
+  const doneColor = obs.resolved ? 'var(--green)' : 'var(--muted)';
+  document.getElementById('statusBar').innerHTML = `
+    <span>Step <strong>${obs.current_step}</strong> / ${obs.max_steps}</span>
+    <span class="sep">|</span>
+    <span style="color:${doneColor}">Resolved: ${obs.resolved}</span>
+    <span class="sep">|</span>
+    <span style="color:${slaColor}">SLA Breached: ${obs.sla_breached}</span>
+    <span class="sep">|</span>
+    <span>Cumulative Reward: <strong>${totalReward.toFixed(3)}</strong></span>`;
+}
+
+function renderConversation(history, lastReward) {
+  const conv = document.getElementById('conversation');
+  conv.innerHTML = '';
+  history.forEach((msg, i) => {
+    const isLast = i === history.length - 1;
+    const div = document.createElement('div');
+    div.className = `msg ${msg.role}`;
+    let rewardBadge = '';
+    if (isLast && lastReward !== null) {
+      const cls = lastReward > 0 ? 'pos' : lastReward < 0 ? 'neg' : 'zero';
+      rewardBadge = `<span class="reward-tag ${cls}">${lastReward > 0 ? '+' : ''}${lastReward.toFixed(3)}</span>`;
+    }
+    div.innerHTML = `<div class="msg-role">${msg.role}${rewardBadge}</div>${escHtml(msg.content)}`;
+    conv.appendChild(div);
+  });
+  conv.scrollTop = conv.scrollHeight;
+}
+
+function renderActionPanel() {
+  const panel = document.getElementById('actionPanel');
+  panel.style.display = 'block';
+  const actions = Object.keys(ACTION_LABELS);
+  const row = document.getElementById('actionRow');
+  row.innerHTML = actions.map(a =>
+    `<button class="action-btn" id="abtn-${a}" onclick="selectAction('${a}')">${ACTION_LABELS[a]}</button>`
+  ).join('') + `<button class="step-btn" id="stepSubmitBtn" onclick="takeStep()" style="margin-left:auto" disabled>⚡ Step</button>`;
+  document.getElementById('payloadRow').innerHTML = '';
+  selectedAction = null;
+}
+
+function selectAction(actionType) {
+  selectedAction = actionType;
+  document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById(`abtn-${actionType}`)?.classList.add('selected');
+  document.getElementById('stepSubmitBtn').disabled = false;
+
+  const templates = PAYLOAD_TEMPLATES[actionType] || [];
+  const row = document.getElementById('payloadRow');
+  row.innerHTML = templates.map(t => `
+    <div class="pf">
+      <label>${t.label}</label>
+      ${t.type === 'textarea'
+        ? `<textarea id="pf-${t.key}" placeholder="${t.placeholder}"></textarea>`
+        : `<input type="text" id="pf-${t.key}" placeholder="${t.placeholder}">`
+      }
+    </div>`).join('');
+}
+
+function renderScore(data) {
+  const el = document.getElementById('scoreDisplay');
+  el.style.display = 'block';
+  const task = TASK_DEFS.find(t => t.id === data.task_id);
+  const passClass = data.passed ? 'pass' : 'fail';
+  el.innerHTML = `
+    <h3>Grader Result</h3>
+    <div class="score-val ${passClass}">${data.score.toFixed(4)}</div>
+    <div style="font-size:12px;margin-top:4px;color:var(--muted)">
+      threshold ${task?.reward_threshold ?? '—'} · ${data.passed ? '✓ PASS' : '✗ FAIL'}
+    </div>
+    <div class="score-feedback">${data.feedback}</div>
+    <div style="margin-top:12px">
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Breakdown</div>
+      ${Object.entries(data.breakdown).map(([k,v]) =>
+        `<div class="breakdown-item">
+          <span class="bk-name">${k.replace(/_/g,' ')}</span>
+          <span class="bk-val ${v>0?'pos':v<0?'neg':''}">${v>=0?'+':''}${v.toFixed(2)}</span>
+        </div>`
+      ).join('')}
+    </div>`;
+}
+
+function showError(msg) {
+  const conv = document.getElementById('conversation');
+  const div = document.createElement('div');
+  div.style.cssText = 'background:rgba(239,68,68,.1);border:1px solid var(--red);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin:8px 0;align-self:stretch;';
+  div.textContent = '⚠ ' + msg;
+  conv.appendChild(div);
+  conv.scrollTop = conv.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+init();
+</script>
+</body>
+</html>

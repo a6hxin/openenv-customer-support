@@ -1,0 +1,99 @@
+name: customer-support-resolution
+version: "1.0.0"
+description: >
+  A real-world customer support environment where an AI agent triages, diagnoses,
+  and resolves support tickets. The agent must gather information, apply policies,
+  escalate appropriately, and close tickets — mirroring a Tier-1/Tier-2 support workflow.
+
+author: OpenEnv Submission
+license: MIT
+
+observation_space:
+  type: object
+  properties:
+    ticket_id:
+      type: string
+    customer_tier:
+      type: string
+      enum: [free, pro, enterprise]
+    issue_category:
+      type: string
+      enum: [billing, technical, account, feature_request, security]
+    description:
+      type: string
+    conversation_history:
+      type: array
+      items:
+        type: object
+        properties:
+          role:
+            type: string
+          content:
+            type: string
+    current_step:
+      type: integer
+    max_steps:
+      type: integer
+    resolved:
+      type: boolean
+    metadata:
+      type: object
+
+action_space:
+  type: object
+  required: [action_type]
+  properties:
+    action_type:
+      type: string
+      enum:
+        - ask_clarification
+        - lookup_account
+        - apply_fix
+        - escalate
+        - send_response
+        - close_ticket
+        - issue_refund
+        - reset_credentials
+        - check_system_status
+    payload:
+      type: object
+      description: Action-specific parameters
+
+tasks:
+  - id: billing_dispute_easy
+    name: "Billing Dispute Resolution (Easy)"
+    description: >
+      Resolve a straightforward billing dispute where a customer was double-charged.
+      The agent must verify the charge, apply the refund policy, and close the ticket.
+    difficulty: easy
+    max_steps: 10
+    reward_threshold: 0.7
+
+  - id: technical_outage_medium
+    name: "Technical Outage Triage (Medium)"
+    description: >
+      Diagnose and resolve a connectivity issue affecting a Pro customer.
+      Requires checking system status, gathering diagnostics, and applying the
+      correct fix or escalation path.
+    difficulty: medium
+    max_steps: 15
+    reward_threshold: 0.65
+
+  - id: security_incident_hard
+    name: "Security Incident Response (Hard)"
+    description: >
+      Handle a suspected account compromise. The agent must follow the security
+      runbook: verify identity, freeze account, reset credentials, notify the
+      customer, and document the incident — all within SLA.
+    difficulty: hard
+    max_steps: 20
+    reward_threshold: 0.6
+
+endpoints:
+  reset: POST /reset
+  step: POST /step
+  state: GET /state
+  tasks: GET /tasks
+  grader: POST /grader
+  baseline: GET /baseline
+  health: GET /health
