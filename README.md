@@ -1,3 +1,13 @@
+---
+title: Openenv Customer Support
+emoji: 🎧
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
+
 # 🎧 Customer Support Resolution — OpenEnv Environment
 
 > **OpenEnv Challenge Submission** · Built with the [OpenEnv framework](https://github.com/huggingface/openenv) by **Meta & Hugging Face**
@@ -262,14 +272,3 @@ openenv-customer-support/
 ## 📄 License
 
 MIT
-title: {{openenv-customer-support}}
-emoji: {{🕶️}}
-colorFrom: {{colorFrom}}
-colorTo: {{colorTo}}
-sdk: {{Docker}}
-sdk_version: "{{sdkVersion}}"
-{{#pythonVersion}}
-python_version: "{{pythonVersion}}"
-{{/pythonVersion}}
-app_file: app.py
-pinned: false
