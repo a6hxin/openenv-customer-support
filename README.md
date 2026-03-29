@@ -15,7 +15,7 @@ A production-grade reinforcement learning environment where an AI agent handles 
 
 ## Hugging Face Space
 
-**Live Demo:** `https://huggingface.co/spaces/a6hxin/openenv-customer-support`
+**Live Demo:** `https://a6hxin-openenv-customer-support.hf.space`
 
 
 ## Environment Description
