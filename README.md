@@ -32,6 +32,7 @@ Customer support is one of the most common real-world decision-making tasks for 
 
 
 ## Observation Space
+```
 {
   "ticket_id": "TKT-BILL-001",
   "customer_tier": "pro",
@@ -48,14 +49,14 @@ Customer support is one of the most common real-world decision-making tasks for 
   "sla_breached": false,
   "metadata": { ... }
 }
-
+```
 
 ## Reward Function
 
 Rewards are **incremental** — the agent earns partial credit for every correct step:
 
 ### Easy (Billing Dispute)
-
+```
 account_verified       +0.20
 refund_issued          +0.35
 customer_notified      +0.15
@@ -63,9 +64,9 @@ ticket_closed          +0.20
 efficiency_bonus       +0.10  (≤5 steps)
 unnecessary_escalation  -0.05
 sla_breach             -0.10
-
+```
 ### Medium (Technical Outage)
-
+```
 account_verified       +0.10
 status_checked         +0.15
 diagnostics_gathered   +0.15
@@ -74,9 +75,9 @@ customer_notified      +0.15
 ticket_closed          +0.15
 efficiency_bonus       +0.05
 sla_breach             -0.10
-
+```
 ### Hard (Security Incident)
-
+```
 identity_verified      +0.15
 account_looked_up      +0.10
 account_frozen         +0.20
@@ -87,8 +88,9 @@ runbook_order_bonus    +0.05  (all steps in correct order)
 identity_skip_penalty  -0.10
 out_of_order_penalty   -0.03 per violation
 sla_breach             -0.10
-
+```
 ## Baseline Results
+```
 python baseline.py
 
 Expected output (seed=42):
@@ -97,12 +99,12 @@ Expected output (seed=42):
 [HARD]   Security Incident Response     score=0.75  ✓ PASS
 
 Mean Score: 0.767
-
+```
 
 ## Tests
-
+```
 pytest tests/ -v
-
+```
 ## Repository Structure
 
 ```
